@@ -1,5 +1,5 @@
 module ChloeDistributed
-export main, annotate_one_task
+export main, annotate_one_task, ZMQ_ENDPOINT
 
 import Distributed
 import Distributed: addprocs, rmprocs, @spawnat, @everywhere, nworkers

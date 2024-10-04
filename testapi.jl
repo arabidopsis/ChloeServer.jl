@@ -1,8 +1,15 @@
 using JuliaWebAPI
-import Chloe
-i = APIInvoker(Chloe.ZMQ_ENDPOINT)
+import ChloeServer
+# need the broker running...--broker=default
+i = APIInvoker(ChloeServer.ZMQ_ENDPOINT)
 
 println(apicall(i, "ping"))
-println(apicall(i, "annotate", read("junk/NC_011032.1.fa",String)))
+ret = apicall(i, "annotate", read("junk/NC_011032.1.fa", String))
 
-apicall(i, "exit")
+data = pop!(ret, "data")
+result = pop!(data, "result")
+
+println(data)
+println(result)
+
+# apicall(i, "exit")
