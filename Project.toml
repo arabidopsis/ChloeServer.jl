@@ -2,3 +2,15 @@ name = "ChloeServer"
 uuid = "45a5bb5a-036d-48b6-8919-e8a69c7e6daf"
 authors = ["arabidopsis <ian.castleden@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+Chloe = "ca11047d-399f-4cb1-8477-165950ce0018"
+Crayons = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+JuliaWebAPI = "480116ec-64ea-5dec-baca-db6b11e96e37"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+StringEncodings = "69024149-9ee7-55f6-a4c4-859efe599b68"
+ZMQ = "c2297ded-f4af-51ae-bb23-16f91089e4e1"
+ZeroMQ_jll = "8f1865be-045e-5c20-9c9f-bfbfb0764568"
