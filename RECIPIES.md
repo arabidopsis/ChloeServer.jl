@@ -4,7 +4,7 @@ To set up Chloë as a server that you can interact with, initiate the Chloë ser
 
 ```sh
 julia -t8 --project=. -e 'using ChloeServer; main()' -- \
-    --level=info --workers=4 --broker=default --reference="cp"
+    --level=info --workers=4 --broker=default
 ```
 
 Then you can interact with this server using [JuliaWebAPI](https://github.com/JuliaWeb/JuliaWebAPI.jl). This utilises the JuliaWebAPI package to interact with a server running the Chloe package. It sends a request to annotate a fasta file, receives the annotation result along with the elapsed time, and then stops the server.
@@ -24,7 +24,7 @@ code, data = ret["code"], ret["data"]
 result, elapsed_ms = data["result"], data["elapsed"]
 
 #stop the server....
-apicall(i, "exit")
+apicall(i, "exit", )
 ```
 ## Running Remotely
 

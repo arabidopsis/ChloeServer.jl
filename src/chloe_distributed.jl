@@ -1,5 +1,5 @@
 module ChloeDistributed
-export main, annotate_one_task, ZMQ_ENDPOINT
+export main, annotate_one_task, ZMQ_ENDPOINT, create_biref
 
 import Distributed
 import Distributed: addprocs, rmprocs, @spawnat, @everywhere, nworkers
@@ -12,7 +12,7 @@ import Crayons: @crayon_str
 import StringEncodings: encode
 import ZMQ
 
-import Chloe.Annotator: MayBeString, verify_refs, ChloeConfig
+import Chloe.Annotator: MayBeString, verify_refs, ChloeConfig, ReferenceDb
 
 import ..WebAPI: TerminatingJSONMsgFormat
 import ..ZMQLogging: set_global_logger
@@ -20,6 +20,7 @@ import ..Broker: check_endpoints, remove_endpoints
 
 include("dist_globals.jl")
 include("tasks.jl")
+include("reference.jl")
 
 function git_version()
     repo_dir = dirname(@__FILE__)
@@ -69,22 +70,20 @@ function create_responder(apispecs::Vector{Function}, addr::String, ctx::ZMQ.Con
     api
 end
 
-function arm_procs_full(procs, backend::MayBeString=nothing, level::String="info"; reference_dir="cp")
+function arm_procs(procs, backend::MayBeString=nothing, level::String="info")
     @everywhere procs begin
         # If we have a raw 'import Chloe' here then
         # precompilation (of the Chloe package) tries to recurse and compile Chloe *again* (I think) and fails.
         # "hiding" the import inside a quote seems to work.
         eval(quote
             import ChloeServer
-            import Chloe
         end)
         ChloeServer.set_global_logger($level, $backend; topic="annotator")
-        global REFERENCE = Chloe.ReferenceDb($reference_dir)
+        global REFERENCE = ChloeServer.create_biref()
     end
 end
 
 function chloe_distributed(;
-    reference_dir="cp",
     address=ZMQ_WORKER,
     level="warn",
     workers=3,
@@ -110,7 +109,7 @@ function chloe_distributed(;
     procs = filter(w -> w != 1, Distributed.workers())
 
     function arm(new_procs)
-        arm_procs_full(new_procs, backend, level; reference_dir=reference_dir)
+        arm_procs(new_procs, backend, level)
     end
 
     arm(procs)
@@ -155,6 +154,27 @@ function chloe_listen(address::String, broker::MayBeString, arm_procs::Function)
         @info success("finished $target_id after $elapsed")
         nannotations += 1
         return Dict("elapsed" => toms(elapsed), "filename" => filename, "ncid" => string(target_id), "config" => cfg)
+    end
+    function chloe2(
+        fasta::String,
+        outputsff::MayBeString=nothing,
+        outputgff3::MayBeString=nothing,
+        config::Union{Nothing,Dict{String,V} where V<:Any}=nothing,
+        task_id::MayBeString=nothing
+    )
+        start = now()
+        cfg = if isnothing(config)
+            ChloeConfig()
+        else
+            ChloeConfig(config)
+        end
+        # filename, target_id = fetch(@spawnat :any Main.ChloeServer.annotate_one_task(fasta, outputsff, task_id, cfg))
+        ret = fetch(@spawnat :any Main.ChloeServer.annotate_one_task_gff3(fasta, outputsff, outputgff3, task_id, cfg))
+        elapsed = now() - start
+        ret["elapsed"] = toms(elapsed)
+        @info success("finished $(ret["ncid"]) after $elapsed ref=$(cfg.reference)")
+        nannotations += 1
+        return ret
     end
 
     function batch_annotate(
@@ -325,12 +345,13 @@ function chloe_listen(address::String, broker::MayBeString, arm_procs::Function)
         @debug "starting worker $workno"
         process(create_responder([
             chloe,
+            chloe2,
             annotate,
             # batch_annotate,
             ping,
             nconn,
             exit,
-            add_workers
+            # add_workers
         ], address, ctx))
         # :terminate called so process loop is finished
         put!(done, workno)
@@ -357,12 +378,6 @@ function get_distributed_args(args::Vector{String}=ARGS)
     distributed_args = ArgParseSettings(; prog="ChloëServer", autofix_names=true)  # turn "-" into "_" for arg names.
 
     @add_arg_table! distributed_args begin
-        "--reference", "-r"
-        arg_type = String
-        dest_name = "reference_dir"
-        default = "cp"
-        metavar = "cp|nr"
-        help = "references and templates to use for annotations: cp for chloroplast, nr for nuclear rDNA"
         "--address", "-a"
         arg_type = String
         metavar = "URL"

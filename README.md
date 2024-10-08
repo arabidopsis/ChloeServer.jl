@@ -10,7 +10,7 @@ Running the chloe server. In a terminal type:
 ```bash
 julia -t8 --project=. distributed.jl --level=info --workers=4 --broker=default
 # *OR*
-julia -t8 --project=. -e 'using Chloe; distributed_main()' -- --level=info --workers=4 --broker=default
+julia -t8 --project=. -e 'using ChloeServer; main()' -- --level=info --workers=4 --broker=default
 ```
 
 In another terminal start julia:
