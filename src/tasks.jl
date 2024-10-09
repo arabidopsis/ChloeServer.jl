@@ -7,10 +7,9 @@ import Chloe.Annotator:
     fasta_reader,
     write_result,
     maybe_gzread,
-    AbstractReferenceDb,
-    maybe_gzwrite
+    AbstractReferenceDb
 # put these in the global namespace
-import ..ZMQLogging: annotation_local_storage, set_global_logger, TASK_KEY
+import ..ZMQLogging: annotation_local_storage, TASK_KEY
 
 function annotate_gff3(
     db::AbstractReferenceDb,
@@ -33,9 +32,8 @@ end
 
 function annotate_one_task(fasta::String, output::MayBeString, task_id::MayBeString, config::ChloeConfig)
     annotation_local_storage(TASK_KEY, task_id)
-    db = select_reference(Main.REFERENCE, config.reference)
     try
-        annotate(db, fasta, config, output)
+        annotate(select_reference(Main.REFERENCE, config.reference), fasta, config, output)
     finally
         annotation_local_storage(TASK_KEY, nothing)
     end
@@ -43,9 +41,8 @@ end
 
 function annotate_one_task(fasta::IO, task_id::MayBeString, config::ChloeConfig)
     annotation_local_storage(TASK_KEY, task_id)
-    db = select_reference(Main.REFERENCE, config.reference)
     try
-        annotate(db, fasta, config, IOBuffer())
+        annotate(select_reference(Main.REFERENCE, config.reference), fasta, config, IOBuffer())
     finally
         annotation_local_storage(TASK_KEY, nothing)
     end
@@ -54,8 +51,8 @@ end
 function annotate_batch_task(directory::String, task_id::MayBeString, config::ChloeConfig)::Integer
     annotation_local_storage(TASK_KEY, task_id)
     nannotations = 0
-    db = select_reference(Main.REFERENCE, config.reference)
     try
+        db = select_reference(Main.REFERENCE, config.reference)
         for fasta in readdir(directory; join=true)
             if endswith(fasta, r"\.(fa|fna|fasta)")
                 annotate(db, fasta, config, nothing)
@@ -76,9 +73,8 @@ function annotate_one_task_gff3(
     config::ChloeConfig
 )
     annotation_local_storage(TASK_KEY, task_id)
-    db = select_reference(Main.REFERENCE, config.reference)
     try
-        annotate_gff3(db, fasta, config, sfffile, gff3file)
+        annotate_gff3(select_reference(Main.REFERENCE, config.reference), fasta, config, sfffile, gff3file)
     finally
         annotation_local_storage(TASK_KEY, nothing)
     end

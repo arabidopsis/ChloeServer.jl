@@ -399,7 +399,7 @@ function get_distributed_args(args::Vector{String}=ARGS)
         "--backend", "-z"
         arg_type = String
         metavar = "URL"
-        help = "log to zmq endpoint"
+        help = "log to zmq endpoint (use \"default\" for default backend endpoint)"
     end
 
     distributed_args.epilog = """
