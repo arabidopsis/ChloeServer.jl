@@ -4,9 +4,10 @@ if [ ! -d testo ]; then
 else
     rm -rf testo/*
 fi
-tfiles="testfa/NC_020019.1.fa testfa/NC_020318.1.fa testfa/NC_020152.1.fa testfa/NC_020320.1.fa"
+PROJECT=../chloe_biojulia
+tfiles="$PROJECT/testfa/NC_020019.1.fa $PROJECT/testfa/NC_020318.1.fa $PROJECT/testfa/NC_020152.1.fa $PROJECT/testfa/NC_020320.1.fa"
 # exec python bin/chloe.py annotate -o testo --workers=4  $tfiles
-JULIA_NUM_THREADS=8 time -p julia --project=. chloe.jl -l info annotate -o testo $tfiles
+time -p julia -t8 --project=$PROJECT $PROJECT/chloe.jl -l info annotate -o testo $tfiles
 for f in $(ls testo)
 do 
     echo "diffing $f"

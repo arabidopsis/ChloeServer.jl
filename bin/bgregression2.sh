@@ -7,6 +7,7 @@ O='\e[0m'
 G='\e[1;32m'
 R='\e[1;31m'
 echo -e "ensure: ${G}make run-chloe-broker$O"
+
 fafiles=$(ls testfa/*.fa)
 python bin/chloe.py annotate2 -o testo --workers=4 $fafiles
 for f in $fafiles

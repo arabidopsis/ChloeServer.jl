@@ -29,7 +29,7 @@ R='\e[1;31m'
 C='\e[1;36m' # bold cyan
 A='\e[1;30m' # gray
 
-
+PROJECT=../chloe_biojulia
 # fa files as array
 fafiles=($(ls $DIR/*.fa))
 # number
@@ -49,7 +49,7 @@ done
 echo -e "index: ${index[@]}: $TOTAL/${C}$n${O}"
 echo "start annotations with: ${todo[@]}"
 
-time -p julia --threads=8 --project=. "$@" chloe.jl -l warn annotate -o testo --numgsrefs 16 "${todo[@]}"
+time -p julia --threads=8 --project=$PROJECT "$@" $PROJECT/chloe.jl -l warn annotate -o testo  "${todo[@]}"
 
 for idx in ${index[@]}
 do
