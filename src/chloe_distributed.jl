@@ -398,6 +398,9 @@ function get_distributed_args(args::Vector{String}=ARGS)
         arg_type = String
         metavar = "URL"
         help = "log to zmq endpoint (use \"default\" for default backend endpoint)"
+        "--terminate", "-t"
+        arg_type = Int
+        help = "open an http port to terminate process"
     end
 
     distributed_args.epilog = """
@@ -467,11 +470,21 @@ function maybe_launch_broker(distributed_args)
     end
     distributed_args
 end
+import ..Terminate: terminate_me
 
+function maybe_terminate(distributed_args)
+    t = get(distributed_args, :terminate, nothing)
+    if t !== nothing
+        pop!(distributed_args, :terminate)
+        @async terminate_me(t)
+    end
+    distributed_args
+end
 function main(args::Vector{String}=ARGS)
     Sys.set_process_title("chloe-distributed")
     distributed_args = get_distributed_args(args)
     distributed_args = maybe_launch_broker(distributed_args)
+    distributed_args = maybe_terminate(distributed_args)
 
     chloe_distributed(; distributed_args...)
 end
