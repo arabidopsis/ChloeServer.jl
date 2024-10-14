@@ -12,7 +12,7 @@ import Crayons: @crayon_str
 import StringEncodings: encode
 import ZMQ
 
-import Chloe.Annotator: MayBeString, verify_refs, ChloeConfig, ReferenceDb
+import Chloe.Annotator: MayBeString, verify_refs, ChloeConfig, ReferenceDb, AbstractReferenceDb
 
 import ..WebAPI: TerminatingJSONMsgFormat
 import ..ZMQLogging: set_global_logger
@@ -157,8 +157,7 @@ function chloe_listen(address::String, broker::MayBeString, arm_procs::Function)
     end
     function chloe2(
         fasta::String,
-        outputsff::MayBeString=nothing,
-        outputgff3::MayBeString=nothing,
+        output::String,
         config::Union{Nothing,Dict{String,V} where V<:Any}=nothing,
         task_id::MayBeString=nothing
     )
@@ -169,12 +168,11 @@ function chloe_listen(address::String, broker::MayBeString, arm_procs::Function)
             ChloeConfig(config)
         end
         # filename, target_id = fetch(@spawnat :any Main.ChloeServer.annotate_one_task(fasta, outputsff, task_id, cfg))
-        ret = fetch(@spawnat :any Main.ChloeServer.annotate_one_task_gff3(fasta, outputsff, outputgff3, task_id, cfg))
+        ncid = fetch(@spawnat :any Main.ChloeServer.annotate_one_task_json(fasta, output, task_id, cfg))
         elapsed = now() - start
-        ret["elapsed"] = toms(elapsed)
-        @info success("finished $(ret["ncid"]) after $elapsed ref=$(cfg.reference)")
+        @info success("finished $(ncid) after $elapsed ref=$(cfg.reference)")
         nannotations += 1
-        return ret
+        return Dict("elapsed" => toms(elapsed), "filename" => output, "ncid" => string(ncid), "config" => cfg)
     end
 
     function batch_annotate(
@@ -350,7 +348,7 @@ function chloe_listen(address::String, broker::MayBeString, arm_procs::Function)
             # batch_annotate,
             ping,
             nconn,
-            exit,
+            exit
             # add_workers
         ], address, ctx))
         # :terminate called so process loop is finished

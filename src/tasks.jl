@@ -1,4 +1,4 @@
-
+import StatsBase: geomean
 import Chloe.Annotator:
     annotate,
     MayBeIO,
@@ -7,26 +7,55 @@ import Chloe.Annotator:
     fasta_reader,
     write_result,
     maybe_gzread,
-    AbstractReferenceDb
+    maybe_gzwrite,
+    ChloeAnnotation,
+    writeGFF3,
+    writeSFF,
+    CircularVector
+
+import JSON3
 # put these in the global namespace
 import ..ZMQLogging: annotation_local_storage, TASK_KEY
 
-function annotate_gff3(
-    db::AbstractReferenceDb,
-    infile::String,
-    config::ChloeConfig,
-    sfffile::String,
-    gff3file::MayBeString
-)
+function remove_stack!(result::ChloeAnnotation)
+    for sff_model in result.annotation.forward
+        for feature in sff_model.features
+            feature.feature.stack = CircularVector([])
+        end
+    end
+
+    for sff_model in result.annotation.reverse
+        for feature in sff_model.features
+            feature.feature.stack = CircularVector([])
+        end
+    end
+    result
+end
+
+function annotate_json(db::AbstractReferenceDb, infile::String, config::ChloeConfig, outfile::String)
+    result = maybe_gzread(infile) do io
+        target_id, seqs = fasta_reader(io)
+        annotate_one_worker(db, target_id, seqs, config)
+    end
+    # result = remove_stack!(result)
+    io = IOBuffer()
+    writeSFF(io, result.target_id, result.target_length, geomean(values(result.coverages)), result.annotation)
+    sff = String(take!(io))
+    io = IOBuffer()
+    writeGFF3(io, result.target_id, result.target_length, result.annotation)
+    gff3 = String(take!(io))
+    # data = Dict("result" => result, "sff" => sff, "gff3" => gff3, "id" => result.target_id)
+    data = Dict("sff" => sff, "gff3" => gff3, "id" => result.target_id)
+    maybe_gzwrite(outfile) do io
+        JSON3.write(io, data)
+    end
+    return string(result.target_id)
+end
+
+function annotate_one(db::AbstractReferenceDb, infile::String, config::ChloeConfig)
     maybe_gzread(infile) do io
         target_id, seqs = fasta_reader(io)
-        result = annotate_one_worker(db, target_id, seqs, config)
-        write_result(result, false, sfffile)
-        if ~isnothing(gff3file)
-            write_result(result, true, gff3file)
-        end
-
-        return Dict("filename" => sfffile, "gff3" => gff3file, "ncid" => string(target_id), "config" => config)
+        return annotate_one_worker(db, target_id, seqs, config)
     end
 end
 
@@ -65,16 +94,10 @@ function annotate_batch_task(directory::String, task_id::MayBeString, config::Ch
     end
 end
 
-function annotate_one_task_gff3(
-    fasta::String,
-    sfffile::String,
-    gff3file::MayBeString,
-    task_id::MayBeString,
-    config::ChloeConfig
-)
+function annotate_one_task_json(fasta::String, outfile::String, task_id::MayBeString, config::ChloeConfig)
     annotation_local_storage(TASK_KEY, task_id)
     try
-        annotate_gff3(select_reference(Main.REFERENCE, config.reference), fasta, config, sfffile, gff3file)
+        annotate_json(select_reference(Main.REFERENCE, config.reference), fasta, config, outfile)
     finally
         annotation_local_storage(TASK_KEY, nothing)
     end
