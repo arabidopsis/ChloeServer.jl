@@ -16,8 +16,8 @@ JEXC = re.compile(r'ErrorException\("(.+)"\)')
 
 context = zmq.Context.instance()
 
-ZMQ_ENDPOINT = "ipc:///tmp/chloe5-client"
-ZMQ_WORKER = "tcp://127.0.0.1:9458"
+ZMQ_ENDPOINT = "ipc:///tmp/chloe6-client"
+ZMQ_WORKER = "tcp://127.0.0.1:9459"
 
 WORKER_PORT = int(ZMQ_WORKER.split(":")[-1])
 

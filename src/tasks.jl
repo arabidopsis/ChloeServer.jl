@@ -11,7 +11,8 @@ import Chloe.Annotator:
     ChloeAnnotation,
     writeGFF3,
     writeSFF,
-    CircularVector
+    CircularVector,
+    transform!
 
 import JSON3
 # put these in the global namespace
@@ -33,11 +34,14 @@ function remove_stack!(result::ChloeAnnotation)
 end
 
 function annotate_json(db::AbstractReferenceDb, infile::String, config::ChloeConfig, outfile::String)
-    result = maybe_gzread(infile) do io
-        target_id, seqs = fasta_reader(io)
-        annotate_one_worker(db, target_id, seqs, config)
+    target_id, seqs = maybe_gzread(infile) do io
+        fasta_reader(io)
     end
+    result = annotate_one_worker(db, target_id, seqs, config)
     # result = remove_stack!(result)
+    if ~config.no_transform
+        seqs, result = transform!(seqs, result, db.templates)
+    end
     io = IOBuffer()
     writeSFF(io, result.target_id, result.target_length, geomean(values(result.coverages)), result.annotation)
     sff = String(take!(io))
@@ -45,7 +49,11 @@ function annotate_json(db::AbstractReferenceDb, infile::String, config::ChloeCon
     writeGFF3(io, result.target_id, result.target_length, result.annotation)
     gff3 = String(take!(io))
     # data = Dict("result" => result, "sff" => sff, "gff3" => gff3, "id" => result.target_id)
-    data = Dict("sff" => sff, "gff3" => gff3, "id" => result.target_id)
+
+    data = Dict("sff" => sff, "gff3" => gff3, "id" => result.target_id, "cfg" => config)
+    if ~config.no_transform
+        data["transformed"] = string(seqs.forward[1:length(seqs.forward)])
+    end
     maybe_gzwrite(outfile) do io
         JSON3.write(io, data)
     end

@@ -17,6 +17,7 @@ import Chloe.Annotator: MayBeString, verify_refs, ChloeConfig, ReferenceDb, Abst
 import ..WebAPI: TerminatingJSONMsgFormat
 import ..ZMQLogging: set_global_logger
 import ..Broker: check_endpoints, remove_endpoints
+import ..Terminate: terminate_me
 
 include("dist_globals.jl")
 include("tasks.jl")
@@ -438,7 +439,7 @@ end
 
 function maybe_launch_broker(distributed_args)
     function find_endpoint()
-        endpoint = tmplt = "/tmp/chloe-worker"
+        endpoint = tmplt = joinpath(tempdir(), "chloe-worker")
         n = 0
         while isfile(endpoint)
             n += 1
@@ -470,7 +471,6 @@ function maybe_launch_broker(distributed_args)
     end
     distributed_args
 end
-import ..Terminate: terminate_me
 
 function maybe_terminate(distributed_args)
     t = get(distributed_args, :terminate, nothing)

@@ -40,9 +40,9 @@ The *actual* production configuration uses `distributed.jl`
 (for threading issues) and runs
 the server as a client of a DEALER/ROUTER server
 (see `src/dist/broker.jl` and the `Makefile`). It *connects* to the
-DEALER end on `tcp://127.0.0.1:9467`. The
+DEALER end on `tcp://127.0.0.1:9459`. The
 [chloe website](https://chloe.plastid.org)
-connects to `ipc:///tmp/chloe5-client` which
+connects to `ipc:///tmp/chloe6-client` which
 is the ROUTER end of broker. In this setup
 you can run multiple chloe servers connecting
 to the same DEALER.
