@@ -473,9 +473,8 @@ function maybe_launch_broker(distributed_args)
 end
 
 function maybe_terminate(distributed_args)
-    t = get(distributed_args, :terminate, nothing)
+    t = pop!(distributed_args, :terminate, nothing)
     if t !== nothing
-        pop!(distributed_args, :terminate)
         @async terminate_me(t)
     end
     distributed_args
