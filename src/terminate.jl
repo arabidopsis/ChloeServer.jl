@@ -14,11 +14,12 @@ function find_endpoint()
 end
 
 const JSON_RESP_HDRS = Dict{String,String}("Content-Type" => "application/json; charset=utf-8")
+
 function terminate_me(port::Integer=9998)
     function terminate()
         @info "terminated..."
         @async begin
-            sleep(3)
+            sleep(2)
             procs = filter(w -> w != 1, workers())
             try
                 rmprocs(procs...; waitfor=20)
@@ -35,8 +36,8 @@ function terminate_me(port::Integer=9998)
     # task listen, bind, id
     resp = create_responder(tasks, endpoint, true, nothing)
     process(resp; async=true)
-    @info "terminate: listening on port $(port)"
     api = APIInvoker(endpoint)
+    @info "terminate: listening on port $(port)"
     run_http(api, port)
 end
 
