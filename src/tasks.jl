@@ -9,14 +9,30 @@ import Chloe.Annotator:
     maybe_gzread,
     maybe_gzwrite,
     ChloeAnnotation,
-    writeGFF3,
     writeSFF,
     CircularVector,
-    transform!
+    transform!,
+    chloe2biojulia
 
+import GenomicAnnotations: GFF, GenBank, EMBL, Record
+import BioSequences: @dna_str
 import JSON3
 # put these in the global namespace
 import ..ZMQLogging: annotation_local_storage, TASK_KEY
+
+# see function write_result in Chloe.jl/src/output_formats.jl
+function writeGFF3(io, biojulia::Record)
+    GFF.printgff(io, biojulia)
+end
+
+function writeGBK(io, biojulia::Record, target_id)
+    biojulia.header = "LOCUS       $(rpad(target_id, 10, ' ')) $(lpad(length(biojulia.sequence), 10, ' ')) bp    DNA     circular PLN $(uppercase(Dates.format(now(), "dd-uuu-yyyy")))"
+    GeneBank.printgbk(io, biojulia)
+end
+
+function writeEMBL(io, biojulia::Record)
+    EMBL.printembl(io, biojulia)
+end
 
 function remove_stack!(result::ChloeAnnotation)
     for sff_model in result.annotation.forward
@@ -46,7 +62,9 @@ function annotate_json(db::AbstractReferenceDb, infile::String, config::ChloeCon
     writeSFF(io, result.target_id, result.target_length, geomean(values(result.coverages)), result.annotation)
     sff = String(take!(io))
     io = IOBuffer()
-    writeGFF3(io, result.target_id, result.target_length, result.annotation)
+    biojulia = chloe2biojulia(result)
+    biojulia.sequence = dna"" # seqs.forward[1:length(seqs.forward)]
+    writeGFF3(io, biojulia)
     gff3 = String(take!(io))
     # data = Dict("result" => result, "sff" => sff, "gff3" => gff3, "id" => result.target_id)
 
