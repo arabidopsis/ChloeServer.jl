@@ -1,7 +1,7 @@
 name = "ChloeServer"
 uuid = "45a5bb5a-036d-48b6-8919-e8a69c7e6daf"
 authors = ["arabidopsis <ian.castleden@gmail.com>"]
-version = "0.1.16ZZ"
+version = "0.1.16"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"

@@ -17,4 +17,8 @@ run-chloe-logger:
 run-chloe-backend:
 	julia --threads=8 --project=. --color=yes distributed.jl -l info --workers=4 --address=tcp://127.0.0.1:9467 --backend=ipc:///tmp/chloe-backend --broker=@ipc:///tmp/chloe-client
 
+# show reference directory
+refdir:
+	julia --project=. -e 'using Chloe; chloe_main()' -- refdir 
+
 .PHONY: run-chloe run-chloe-broker run-broker run-chloe-logger run-chloe-backend 
