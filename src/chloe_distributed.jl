@@ -73,7 +73,7 @@ end
 
 function arm_procs(procs, backend::MayBeString=nothing, level::String="info")
     @everywhere procs begin
-        # If we have a raw 'import Chloe' here then
+        # If we have a raw 'import ChloeServer' here then
         # precompilation (of the Chloe package) tries to recurse and compile Chloe *again* (I think) and fails.
         # "hiding" the import inside a quote seems to work.
         eval(quote
@@ -109,16 +109,16 @@ function chloe_distributed(;
 
     procs = filter(w -> w != 1, Distributed.workers())
 
-    function arm(new_procs)
-        arm_procs(new_procs, backend, level)
-    end
+    # function arm(new_procs)
+    #     arm_procs(new_procs, backend, level)
+    # end
 
-    arm(procs)
+    arm_procs(procs, backend, level)
 
-    chloe_listen(address, broker, arm)
+    chloe_listen(address, broker)
 end
 
-function chloe_listen(address::String, broker::MayBeString, arm_procs::Function)
+function chloe_listen(address::String, broker::MayBeString)
     success = crayon"bold green"
     procs = Distributed.workers()
 
@@ -176,23 +176,23 @@ function chloe_listen(address::String, broker::MayBeString, arm_procs::Function)
         return Dict("elapsed" => toms(elapsed), "filename" => output, "ncid" => string(ncid), "config" => cfg)
     end
 
-    function batch_annotate(
-        directory::String,
-        config::Union{Nothing,Dict{String,V} where V<:Any}=nothing,
-        task_id::MayBeString=nothing
-    )
-        start = now()
-        cfg = if isnothing(config)
-            ChloeConfig()
-        else
-            ChloeConfig(config)
-        end
-        n = fetch(@spawnat :any Main.Chloe.annotate_batch_task(directory, task_id, cfg))
-        elapsed = now() - start
-        @info success("finished $directory after $elapsed")
-        nannotations += n
-        return Dict("elapsed" => toms(elapsed), "directory" => directory, "config" => cfg)
-    end
+    # function batch_annotate(
+    #     directory::String,
+    #     config::Union{Nothing,Dict{String,V} where V<:Any}=nothing,
+    #     task_id::MayBeString=nothing
+    # )
+    #     start = now()
+    #     cfg = if isnothing(config)
+    #         ChloeConfig()
+    #     else
+    #         ChloeConfig(config)
+    #     end
+    #     n = fetch(@spawnat :any Main.Chloe.annotate_batch_task(directory, task_id, cfg))
+    #     elapsed = now() - start
+    #     @info success("finished $directory after $elapsed")
+    #     nannotations += n
+    #     return Dict("elapsed" => toms(elapsed), "directory" => directory, "config" => cfg)
+    # end
 
     function decompress(fasta::String)
         # decode a latin1 encoded binary string
@@ -276,48 +276,48 @@ function chloe_listen(address::String, broker::MayBeString, arm_procs::Function)
         return "Exit scheduled for $(nlisteners) workers"
     end
 
-    function add_workers(n::Int, endpoint::MayBeString=nothing)
-        if n < 0
-            if -n >= length(procs)
-                error("use 'exit' to exit chloe!")
-            end
-            # remove listeners & workers
-            @async begin
-                m = length(procs) + n
-                remove = procs[m+1:end]
-                rmprocs(remove) # wait
-                # update globals !not nlisteners thou.
-                procs = procs[1:m]
-                # send terminate to abs(n) listeners
-                if endpoint === nothing
-                    endpoint = broker
-                end
-                if endpoint !== nothing
-                    # main task will update nlisteners count
-                    # when they exit
-                    bgexit(endpoint, abs(n))
-                end
-                @info "removed $(remove) processes using endpoint $(endpoint)"
-            end
+    # function add_workers(n::Int, endpoint::MayBeString=nothing)
+    #     if n < 0
+    #         if -n >= length(procs)
+    #             error("use 'exit' to exit chloe!")
+    #         end
+    #         # remove listeners & workers
+    #         @async begin
+    #             m = length(procs) + n
+    #             remove = procs[m+1:end]
+    #             rmprocs(remove) # wait
+    #             # update globals !not nlisteners thou.
+    #             procs = procs[1:m]
+    #             # send terminate to abs(n) listeners
+    #             if endpoint === nothing
+    #                 endpoint = broker
+    #             end
+    #             if endpoint !== nothing
+    #                 # main task will update nlisteners count
+    #                 # when they exit
+    #                 bgexit(endpoint, abs(n))
+    #             end
+    #             @info "removed $(remove) processes using endpoint $(endpoint)"
+    #         end
 
-        elseif n > 0
-            # add workers
-            @async begin
-                # ensure topology is the same
-                added = addprocs(n; topology=:master_worker, exeflags="--project=$(Base.active_project())")
-                arm_procs(added)
-                @info "added $(added) processes"
-                # update globals
-                procs = [procs..., added...]
-                nlisteners = length(procs)
-                for w in added
-                    @async bgworker(w)
-                end
-            end
-        end
-        msg = n > 0 ? "add" : "remove"
-        "Chloë is scheduled to $(msg) $(abs(n)) worker$(abs(n) !== 1 ? "s" : "")"
-    end
+    #     elseif n > 0
+    #         # add workers
+    #         @async begin
+    #             # ensure topology is the same
+    #             added = addprocs(n; topology=:master_worker, exeflags="--project=$(Base.active_project())")
+    #             arm_procs(added)
+    #             @info "added $(added) processes"
+    #             # update globals
+    #             procs = [procs..., added...]
+    #             nlisteners = length(procs)
+    #             for w in added
+    #                 @async bgworker(w)
+    #             end
+    #         end
+    #     end
+    #     msg = n > 0 ? "add" : "remove"
+    #     "Chloë is scheduled to $(msg) $(abs(n)) worker$(abs(n) !== 1 ? "s" : "")"
+    # end
     # we need to create separate ZMQ sockets to ensure strict
     # request/response (not e.g. request-request response-response)
     # we expect to *connect* to a ZMQ DEALER/ROUTER (see bin/broker.py
