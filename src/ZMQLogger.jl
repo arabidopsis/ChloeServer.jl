@@ -1,6 +1,6 @@
 module ZMQLogging
 
-export TASK_KEY, set_global_logger, ZMQLogger
+export TASK_KEY, set_global_logger, ZMQLogger, quiet_metafmt
 
 import ZMQ
 MayBeString = Union{String,Nothing}
@@ -87,23 +87,25 @@ function Logging.catch_exceptions(logger::ZMQLogger)
     false
 end
 
+# don't add any line number guff even for debugging
+function quiet_metafmt(level, _module, group, id, file, line)
+    color = Logging.default_logcolor(level)
+    prefix = (level == Logging.Warn ? "Warning" : string(level)) * ':'
+    return color, prefix, ""
+
+end
 
 function set_global_logger(level::String="warn", endpoint::MayBeString=nothing; quiet::Bool=true, topic="")
 
-    # don't add any line number guff even for debugging
-    function quiet_metafmt(level, _module, group, id, file, line)
-        color = Logging.default_logcolor(level)
-        prefix = (level == Logging.Warn ? "Warning" : string(level)) * ':'
-        return color, prefix, ""
-
-    end
     llevel = get(LOGLEVELS, level, Logging.Warn)
 
-    if endpoint === nothing
-        logger = Logging.ConsoleLogger(stderr, llevel, meta_formatter=quiet ? quiet_metafmt : Logging.default_metafmt)
-    else
+    if endpoint !== nothing
         logger = ZMQLogger(endpoint::String, llevel; topic=topic)
+        Logging.global_logger(logger)
+    else
+        logger = Logging.ConsoleLogger(stderr, llevel, meta_formatter=quiet ? quiet_metafmt : Logging.default_metafmt)
+        Logging.global_logger(logger)
     end
-    Logging.global_logger(logger)
 end
+
 end # module

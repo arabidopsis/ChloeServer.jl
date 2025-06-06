@@ -115,10 +115,17 @@ function chloe_distributed(;
 
     arm_procs(procs, backend, level)
 
-    chloe_listen(address, broker)
+    chloe_listen(address, broker, backend === nothing)
 end
 
-function chloe_listen(address::String, broker::MayBeString)
+function flush_logs(flushio::Bool)
+    if flushio 
+        flush(stderr)
+        flush(stdout)
+    end
+end
+
+function chloe_listen(address::String, broker::MayBeString, flushio::Bool)
     success = crayon"bold green"
     procs = Distributed.workers()
 
@@ -153,6 +160,7 @@ function chloe_listen(address::String, broker::MayBeString)
         filename, target_id = fetch(@spawnat :any Main.ChloeServer.annotate_one_task(fasta, outputsff, task_id, cfg))
         elapsed = now() - start
         @info success("finished $target_id after $elapsed")
+        flush_logs(flushio)
         nannotations += 1
         return Dict("elapsed" => toms(elapsed), "filename" => filename, "ncid" => string(target_id), "config" => cfg)
     end
@@ -173,6 +181,7 @@ function chloe_listen(address::String, broker::MayBeString)
         elapsed = now() - start
         @info success("finished $(ncid) after $elapsed ref=$(cfg.reference)")
         nannotations += 1
+        flush_logs(flushio)
         return Dict("elapsed" => toms(elapsed), "filename" => output, "ncid" => string(ncid), "config" => cfg)
     end
 
@@ -221,6 +230,7 @@ function chloe_listen(address::String, broker::MayBeString)
         result = String(take!(io))
         elapsed = now() - start
         @info success("finished $target_id after $elapsed")
+        flush_logs(flushio)
         nannotations += 1
 
         return Dict("elapsed" => toms(elapsed), "result" => result, "ncid" => string(target_id), "config" => cfg)
