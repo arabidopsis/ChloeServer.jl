@@ -5,7 +5,6 @@ import Chloe.Annotator:
     MayBeString,
     annotate_one_worker,
     fasta_reader,
-    write_result,
     maybe_gzread,
     maybe_gzwrite,
     ChloeAnnotation,
@@ -55,8 +54,9 @@ function annotate_json(db::AbstractReferenceDb, infile::String, config::ChloeCon
     end
     result = annotate_one_worker(db, target_id, seqs, config)
     # result = remove_stack!(result)
+    ts = ""
     if ~config.no_transform
-        seqs, result = transform!(seqs, result, db.templates)
+        seqs, result, ts = transform!(seqs, result, db.templates)
     end
     io = IOBuffer()
     writeSFF(io, result.target_id, result.target_length, geomean(values(result.coverages)), result.annotation)
@@ -68,8 +68,9 @@ function annotate_json(db::AbstractReferenceDb, infile::String, config::ChloeCon
     gff3 = String(take!(io))
     # data = Dict("result" => result, "sff" => sff, "gff3" => gff3, "id" => result.target_id)
 
-    data = Dict("sff" => sff, "gff3" => gff3, "id" => result.target_id, "cfg" => config)
-    if ~config.no_transform
+    data = Dict("sff" => sff, "gff3" => gff3, "id" => result.target_id, 
+    "cfg" => config, "ts" => ts)
+    if ts != ""
         data["transformed"] = string(seqs.forward[1:length(seqs.forward)])
     end
     maybe_gzwrite(outfile) do io

@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.5"
+julia_version = "1.11.6"
 manifest_format = "2.0"
 project_hash = "1723becf680bd5c6dc481b4f069f954c9e6539d0"
 
@@ -89,7 +89,7 @@ version = "0.17.0+0"
 deps = ["ArgParse", "ArtifactUtils", "BioSequences", "CodecZlib", "Crayons", "Dates", "FASTX", "GenomicAnnotations", "IntervalTrees", "Logging", "Pkg", "Printf", "Statistics", "StatsBase", "UUIDs", "XGBoost"]
 path = "../Chloe.jl"
 uuid = "ca11047d-399f-4cb1-8477-165950ce0018"
-version = "0.1.17"
+version = "0.1.19"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
