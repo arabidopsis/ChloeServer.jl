@@ -1,5 +1,5 @@
 #!/bin/bash
-# run `python -m chloe.background chloe-app` to create
+# run `python -m chloe full-stack` to create
 # the "frontend" to this "backend"
 LEVEL='info'
 if [[ $1 == "-d" ]]; then
