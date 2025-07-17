@@ -24,11 +24,11 @@ include("tasks.jl")
 include("reference.jl")
 
 function git_version()
-    repo_dir = dirname(@__FILE__)
+    repo_dir = dirname(dirname(@__FILE__))
     try
         # older version of git don't have -C
-        # strip(read(pipeline(`git -C "$repo_dir" rev-parse HEAD`, stderr=devnull), String))
-        strip(read(pipeline(`sh -c 'cd "$repo_dir" && git rev-parse HEAD'`; stderr=devnull), String))
+        # strip(read(pipeline(`sh -c 'cd "$repo_dir" && git rev-parse HEAD'`; stderr=devnull), String))
+        strip(read(pipeline(`git -C "$repo_dir" rev-parse HEAD`, stderr=devnull), String))
     catch e
         "unknown"
     end
