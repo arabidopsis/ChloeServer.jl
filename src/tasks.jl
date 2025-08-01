@@ -49,14 +49,15 @@ function remove_stack!(result::ChloeAnnotation)
 end
 
 function annotate_json(db::AbstractReferenceDb, infile::String, config::ChloeConfig, outfile::String)
-    target_id, seqs = maybe_gzread(infile) do io
+    seq_rec = maybe_gzread(infile) do io
         fasta_reader(io)
     end
-    result = annotate_one_worker(db, target_id, seqs, config)
+    result = annotate_one_worker(db, seq_rec.target_id, seq_rec.seq, config)
     # result = remove_stack!(result)
     ts = ""
+    seqs = seq_rec.seq
     if ~config.no_transform
-        seqs, result, ts = transform!(seqs, result, db.templates)
+        seqs, result, ts = transform!(seq_rec.seq, result, db.templates)
     end
     io = IOBuffer()
     writeSFF(io, result.target_id, result.target_length, geomean(values(result.coverages)), result.annotation)
@@ -80,10 +81,10 @@ function annotate_json(db::AbstractReferenceDb, infile::String, config::ChloeCon
 end
 
 function annotate_one(db::AbstractReferenceDb, infile::String, config::ChloeConfig)
-    maybe_gzread(infile) do io
-        target_id, seqs = fasta_reader(io)
-        return annotate_one_worker(db, target_id, seqs, config)
+    seq_rec = maybe_gzread(infile) do io
+        fasta_reader(io)
     end
+    return annotate_one_worker(db, seq_rec.target_id, seq_rec.seq, config)
 end
 
 function annotate_one_task(fasta::String, output::MayBeString, task_id::MayBeString, config::ChloeConfig)
