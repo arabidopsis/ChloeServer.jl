@@ -28,7 +28,7 @@ function git_version()
     try
         # older version of git don't have -C
         # strip(read(pipeline(`sh -c 'cd "$repo_dir" && git rev-parse HEAD'`; stderr=devnull), String))
-        strip(read(pipeline(`git -C "$repo_dir" rev-parse HEAD`, stderr=devnull), String))
+        strip(read(pipeline(`git -C "$repo_dir" rev-parse HEAD`; stderr=devnull), String))
     catch e
         "unknown"
     end
@@ -72,13 +72,13 @@ function create_responder(apispecs::Vector{Function}, addr::String, ctx::ZMQ.Con
 end
 
 function arm_procs(procs, backend::MayBeString=nothing, level::String="info")
+    # If we have a raw 'import ChloeServer' here then
+    # precompilation (of the Chloe package) tries to recurse and compile Chloe *again* (I think) and fails.
+    # "hiding" the import inside a quote seems to work.
+    @everywhere eval(quote
+        import ChloeServer
+    end)
     @everywhere procs begin
-        # If we have a raw 'import ChloeServer' here then
-        # precompilation (of the Chloe package) tries to recurse and compile Chloe *again* (I think) and fails.
-        # "hiding" the import inside a quote seems to work.
-        eval(quote
-            import ChloeServer
-        end)
         ChloeServer.set_global_logger($level, $backend; topic="annotator")
         global REFERENCE = ChloeServer.create_biref()
     end
@@ -119,7 +119,7 @@ function chloe_distributed(;
 end
 
 function flush_logs(flushio::Bool)
-    if flushio 
+    if flushio
         flush(stderr)
         flush(stdout)
     end
@@ -148,14 +148,14 @@ function chloe_listen(address::String, broker::MayBeString, flushio::Bool)
     function chloe(
         fasta::String,
         outputsff::MayBeString=nothing,
-        config::Union{Nothing,Dict{String,V} where V<:Any}=nothing,
+        config::Union{Nothing,AbstractDict{String,V} where V<:Any}=nothing,
         task_id::MayBeString=nothing
     )
         start = now()
         cfg = if isnothing(config)
             ChloeConfig()
         else
-            ChloeConfig(config)
+            ChloeConfig(Dict(config))
         end
         filename, target_id = fetch(@spawnat :any Main.ChloeServer.annotate_one_task(fasta, outputsff, task_id, cfg))
         elapsed = now() - start
@@ -167,14 +167,14 @@ function chloe_listen(address::String, broker::MayBeString, flushio::Bool)
     function chloe2(
         fasta::String,
         output::String,
-        config::Union{Nothing,Dict{String,V} where V<:Any}=nothing,
+        config::Union{Nothing,AbstractDict{String,V} where V<:Any}=nothing,
         task_id::MayBeString=nothing
     )
         start = now()
         cfg = if isnothing(config)
             ChloeConfig()
         else
-            ChloeConfig(config)
+            ChloeConfig(Dict(config))
         end
         # filename, target_id = fetch(@spawnat :any Main.ChloeServer.annotate_one_task(fasta, outputsff, task_id, cfg))
         ncid = fetch(@spawnat :any Main.ChloeServer.annotate_one_task_json(fasta, output, task_id, cfg))
@@ -210,7 +210,7 @@ function chloe_listen(address::String, broker::MayBeString, flushio::Bool)
 
     function annotate(
         fasta::String,
-        config::Union{Nothing,Dict{String,V} where V<:Any}=nothing,
+        config::Union{Nothing,AbstractDict{String,V} where V<:Any}=nothing,
         task_id::MayBeString=nothing
     )
         start = now()
@@ -223,7 +223,7 @@ function chloe_listen(address::String, broker::MayBeString, flushio::Bool)
         cfg = if isnothing(config)
             ChloeConfig()
         else
-            ChloeConfig(config)
+            ChloeConfig(Dict(config))
         end
         input = IOBuffer(fasta)
         io, target_id = fetch(@spawnat :any Main.ChloeServer.annotate_one_task(input, task_id, cfg))

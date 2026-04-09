@@ -1,7 +1,7 @@
 name = "ChloeServer"
 uuid = "45a5bb5a-036d-48b6-8919-e8a69c7e6daf"
 authors = ["arabidopsis <ian.castleden@gmail.com>"]
-version = "0.1.17"
+version = "0.1.18"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
@@ -20,6 +20,9 @@ StructTypes = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
 ZMQ = "c2297ded-f4af-51ae-bb23-16f91089e4e1"
 ZeroMQ_jll = "8f1865be-045e-5c20-9c9f-bfbfb0764568"
 
-[compat]
-BioSequences = "3.4.0"
-GenomicAnnotations = "0.4.4"
+# [compat]
+# BioSequences = "3.4.0"
+# GenomicAnnotations = "0.4.4"
+
+[sources]
+Chloe = {path="../Chloe.jl"}
